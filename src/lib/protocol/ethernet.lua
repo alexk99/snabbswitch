@@ -55,64 +55,68 @@ ethernet:init(
       ]],
    })
 
-local types = { base = 1, dot1q = 2, qinq = 3, }
+local types = { untagged = 1, dot1q = 2, qinq = 3, }
 
 -- Class methods
 
 function ethernet:new(config)
    local o = ethernet:superClass().new(self)
-  
-   local vlan_type = config.vlan_type
-   local header = o._headers[vlan_type]
-   o._header = header
-   local data = header.data
-   header.box[0] = ffi.cast(header.ptr_t, data)
-   ffi.fill(data, ffi.sizeof(data))
+   local vlan_type = config.vlan_type or 1 -- default is untagged
+   local data
+   
+   if (vlan_type ~= 1) then
+      local header = o._headers[vlan_type]
+      o._header = header
+      data = header.data
+      header.box[0] = ffi.cast(header.ptr_t, data)
+      ffi.fill(data, ffi.sizeof(data))
+   end
 
-   local h = o:header();
    o.vlan_type = vlan_type
    o:dst(config.dst)
    o:src(config.src)
    o:type(config.type)
-   
-   -- tci
-   --    3 bit  - prioroty
-   --    1 bit  - cfi (0 - canonical ethernet)
-   --    12 bit - vlan id
-   
-   if (config.vlan_header_bits ~= nil) then   
-      if (vlan_type == 2) then
-         -- dot1q
-         bitfield(16, data, 'tci', 0, 3, config.priority) -- priority
-         bitfield(16, data, 'tci', 3, 1, 0) -- cfi
-         bitfield(16, data, 'tci', 4, 12, config.vid) -- vlan id
-      elseif (vlan_type == 3) then 
-         -- qinq
-         bitfield(16, data, 'outer_tci', 0, 3, config.outer_priority) -- priority
-         bitfield(16, data, 'outer_tci', 3, 1, 0) -- cfi
-         bitfield(16, data, 'outer_tci', 4, 12, config.outer_vid) -- vlan id
-         
-         bitfield(16, data, 'inner_tci', 0, 3, config.inner_priority) -- priority
-         bitfield(16, data, 'inner_tci', 3, 1, 0) -- cfi
-         bitfield(16, data, 'inner_tci', 4, 12, config.inner_vid) -- vlan id
-      end
-   elseif (config.proto_pkt ~= nil) then
-      local proto_pkt = config.proto_pkt
-      local proto_h = proto_pkt:header()
+
+   if (vlan_type ~= 1) then
+      -- tci
+      --    3 bit  - prioroty
+      --    1 bit  - cfi (0 - canonical ethernet)
+      --    12 bit - vlan id
       
-      if (vlan_type == 2) then
-         -- dot1q
-         h.tci = proto_h.tci;
-         h.tpid = proto_h.tpid;
-      elseif (vlan_type == 3) then 
-         -- qinq
-         h.outer_tci = proto_h.outer_tci;
-         h.outer_tpid = proto_h.outer_tpid;
-         h.inner_tci = proto_h.inner_tci;
-         h.inner_tpid = proto_h.inner_tpid;
+      if (config.vlan_header_bits ~= nil) then   
+         if (vlan_type == 2) then
+            -- dot1q
+            bitfield(16, data, 'tci', 0, 3, config.priority) -- priority
+            bitfield(16, data, 'tci', 3, 1, 0) -- cfi
+            bitfield(16, data, 'tci', 4, 12, config.vid) -- vlan id
+         elseif (vlan_type == 3) then 
+            -- qinq
+            bitfield(16, data, 'outer_tci', 0, 3, config.outer_priority) -- priority
+            bitfield(16, data, 'outer_tci', 3, 1, 0) -- cfi
+            bitfield(16, data, 'outer_tci', 4, 12, config.outer_vid) -- vlan id
+            
+            bitfield(16, data, 'inner_tci', 0, 3, config.inner_priority) -- priority
+            bitfield(16, data, 'inner_tci', 3, 1, 0) -- cfi
+            bitfield(16, data, 'inner_tci', 4, 12, config.inner_vid) -- vlan id
+         end
+      elseif (config.proto_pkt ~= nil) then
+         local proto_pkt = config.proto_pkt
+         local proto_h = proto_pkt:header()
+         
+         if (vlan_type == 2) then
+            -- dot1q
+            h.tci = proto_h.tci;
+            h.tpid = proto_h.tpid;
+         elseif (vlan_type == 3) then 
+            -- qinq
+            h.outer_tci = proto_h.outer_tci;
+            h.outer_tpid = proto_h.outer_tpid;
+            h.inner_tci = proto_h.inner_tci;
+            h.inner_tpid = proto_h.inner_tpid;
+         end
       end
    end
-   
+      
    return o
 end
 
