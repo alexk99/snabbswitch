@@ -62,12 +62,11 @@ local types = { untagged = 1, dot1q = 2, qinq = 3, }
 function ethernet:new(config)
    local o = ethernet:superClass().new(self)
    local vlan_type = config.vlan_type or 1 -- default is untagged
-   local data
    
    if (vlan_type ~= 1) then
       local header = o._headers[vlan_type]
       o._header = header
-      data = header.data
+      local data = header.data
       header.box[0] = ffi.cast(header.ptr_t, data)
       ffi.fill(data, ffi.sizeof(data))
    end
@@ -78,6 +77,8 @@ function ethernet:new(config)
    o:type(config.type)
 
    if (vlan_type ~= 1) then
+      local h = o:header()
+   
       -- tci
       --    3 bit  - prioroty
       --    1 bit  - cfi (0 - canonical ethernet)
@@ -86,18 +87,18 @@ function ethernet:new(config)
       if (config.vlan_header_bits ~= nil) then   
          if (vlan_type == 2) then
             -- dot1q
-            bitfield(16, data, 'tci', 0, 3, config.priority) -- priority
-            bitfield(16, data, 'tci', 3, 1, 0) -- cfi
-            bitfield(16, data, 'tci', 4, 12, config.vid) -- vlan id
+            bitfield(16, h, 'tci', 0, 3, config.priority) -- priority
+            bitfield(16, h, 'tci', 3, 1, 0) -- cfi
+            bitfield(16, h, 'tci', 4, 12, config.vid) -- vlan id
          elseif (vlan_type == 3) then 
             -- qinq
-            bitfield(16, data, 'outer_tci', 0, 3, config.outer_priority) -- priority
-            bitfield(16, data, 'outer_tci', 3, 1, 0) -- cfi
-            bitfield(16, data, 'outer_tci', 4, 12, config.outer_vid) -- vlan id
+            bitfield(16, h, 'outer_tci', 0, 3, config.outer_priority) -- priority
+            bitfield(16, h, 'outer_tci', 3, 1, 0) -- cfi
+            bitfield(16, h, 'outer_tci', 4, 12, config.outer_vid) -- vlan id
             
-            bitfield(16, data, 'inner_tci', 0, 3, config.inner_priority) -- priority
-            bitfield(16, data, 'inner_tci', 3, 1, 0) -- cfi
-            bitfield(16, data, 'inner_tci', 4, 12, config.inner_vid) -- vlan id
+            bitfield(16, h, 'inner_tci', 0, 3, config.inner_priority) -- priority
+            bitfield(16, h, 'inner_tci', 3, 1, 0) -- cfi
+            bitfield(16, h, 'inner_tci', 4, 12, config.inner_vid) -- vlan id
          end
       elseif (config.proto_pkt ~= nil) then
          local proto_pkt = config.proto_pkt
