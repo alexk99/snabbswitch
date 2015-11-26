@@ -9,10 +9,13 @@ require("apps.socket.io_h")
 
 dev = {}
 
-function dev:new (ifname)
+function dev:new (ifname, promisc, auxdata)
    assert(ifname)
+   promisc = promisc or 0
+   auxdata = auxdata or 0
+   
    self.__index = self
-   local dev = {fd = C.open_raw(ifname)}
+   local dev = {fd = C.open_raw(ifname, promisc, auxdata)}
    return setmetatable(dev, self)
 end
 

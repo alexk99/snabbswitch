@@ -74,14 +74,11 @@ function router:post_config()
       d_print('port by dev ' .. port.dev)
       self.port_by_dev[port.dev] = port
    end
-
    
    -- vif
    local key, vif_name, vlan_type
-
    local vif_by_key = {}
    self.vif_by_key= vif_by_key
-
    local vif_by_name = {}
    self.vif_by_name= vif_by_name
   
@@ -410,17 +407,5 @@ function router:push()
             self:process_ipv4(port, pkt, eth_pkt, inp_vif)
          end      
       end
-   end   
-   
---      elseif (eth_type == xxx) then -- icmp
-         -- todo
-         -- icmp packets might be fragmented.
-         -- so first packet fragmentation must be implemented
-      
---         local reply = router:process_icmp(pkt, eth_pkt, inp_vif)
---         if reply ~= nil then
---            link.transmit(output_link, reply)
---         end
---      end
-   
+   end  
 end

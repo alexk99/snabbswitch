@@ -62,7 +62,7 @@ function run (parameters)
    local port_name, port
    for port_name, port in pairs(conf.ports) do
       socket_name = "socket_" .. port_name
-      config.app(c, socket_name, raw.RawSocket, port.dev)
+      config.app(c, socket_name, raw.RawSocket, {ifname = port.dev, auxdata = 1})
       
       link_name = socket_name .. '.tx -> r1.' .. port_name
       config.link(c, link_name)

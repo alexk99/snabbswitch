@@ -14,7 +14,7 @@
 
    'name' is the name of the host network interface to which the socket
    is attached, e.g. 'eth0'. */
-int open_raw(const char *name)
+int open_raw(const char *name, int promisc, int auxdata)
 {
     struct ifreq ifr;
     struct sockaddr_ll sll;
@@ -30,24 +30,28 @@ int open_raw(const char *name)
       perror("get interface index");
       return -1;
     }
-    
-//    // promisc mode
-//    struct packet_mreq mr;
-//    memset(&mr, 0, sizeof(mr));
-//    mr.mr_ifindex = ifr.ifr_ifindex;
-//    mr.mr_type = PACKET_MR_PROMISC;
-//    if(setsockopt(fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) < 0) {
-//      printf ("device %s\n", name);
-//      perror("enabling promisc mode has failed");
-//      return -1;
-//    }    
+
+    // promisc mode    
+    if (promisc) {
+       struct packet_mreq mr;
+       memset(&mr, 0, sizeof(mr));
+       mr.mr_ifindex = ifr.ifr_ifindex;
+       mr.mr_type = PACKET_MR_PROMISC;
+       if(setsockopt(fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) < 0) {
+         printf ("device %s\n", name);
+         perror("enabling promisc mode has failed");
+         return -1;
+       }    
+    }
     
     // auxdata
-    int val = 1;
-    if (setsockopt(fd, SOL_PACKET, PACKET_AUXDATA, &val, sizeof(val)) < 0) {
-      perror("enabling auxdata option has failed");
-      return -1;
-    }    
+    if (auxdata) {
+       int val = 1;
+       if (setsockopt(fd, SOL_PACKET, PACKET_AUXDATA, &val, sizeof(val)) < 0) {
+         perror("enabling auxdata option has failed");
+         return -1;
+       }    
+    }
 
     sll.sll_family = AF_PACKET;
     sll.sll_ifindex = ifr.ifr_ifindex;

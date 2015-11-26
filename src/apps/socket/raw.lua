@@ -7,10 +7,10 @@ local dev    = require("apps.socket.dev").dev
 
 RawSocket = {}
 
-function RawSocket:new (ifname)
-   assert(ifname)
+function RawSocket:new (conf)
+   assert(conf.ifname)
    self.__index = self
-   return setmetatable({dev = dev:new(ifname)}, self)
+   return setmetatable({dev = dev:new(conf.ifname, conf.promisc, conf.auxdata)}, self)
 end
 
 function RawSocket:pull ()
